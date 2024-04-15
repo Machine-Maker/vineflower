@@ -142,9 +142,9 @@ public class VarTypeProcessor {
     boolean res = true;
     if (result != null) {
       for (CheckTypesResult.ExprentTypePair entry : result.getLstMaxTypeExprents()) {
-        if (entry.type.typeFamily != TypeFamily.OBJECT) {
+//        if (entry.type.typeFamily != TypeFamily.OBJECT) { // TODO: why is this here?
           changeExprentType(entry.exprent, entry.type, 1);
-        }
+//        }
       }
 
       for (CheckTypesResult.ExprentTypePair entry : result.getLstMinTypeExprents()) {
