@@ -49,7 +49,7 @@ public class DataPoint {
 
     int k = 0;
     if (!mt.hasModifier(CodeConstants.ACC_STATIC)) {
-      point.setVariable(k++, new VarType(CodeType.OBJECT, 0, null));
+      point.setVariable(k++, new VarType(CodeType.OBJECT, 0, "java/lang/Object"));
     }
 
     for (int i = 0; i < md.params.length; i++) {

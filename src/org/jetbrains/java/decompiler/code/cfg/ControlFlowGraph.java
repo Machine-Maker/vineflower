@@ -770,7 +770,7 @@ public class ControlFlowGraph implements CodeConstants {
 
         DataPoint point = new DataPoint();
         point.setLocalVariables(new ArrayList<>(data.getLocalVariables()));
-        point.getStack().push(new VarType(CodeType.OBJECT, 0, null));
+        point.getStack().push(new VarType(CodeType.OBJECT, 0, "java/lang/Object"));
 
         removeJsrInstructions(pool, suc, point);
       }

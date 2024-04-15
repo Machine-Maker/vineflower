@@ -7,6 +7,7 @@ import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.java.decompiler.code.CodeConstants;
+import org.jetbrains.java.decompiler.modules.decompiler.ValidationHelper;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
 
 public class VarType {
@@ -70,7 +71,9 @@ public class VarType {
     this(type, arrayDim, value, getFamily(type, arrayDim), getStackSize(type, arrayDim));
   }
 
-  protected VarType(CodeType type, int arrayDim, String value, @NotNull TypeFamily typeFamily, int stackSize) {
+  protected VarType(CodeType type, int arrayDim, String value, TypeFamily typeFamily, int stackSize) {
+    ValidationHelper.assertTrue(type != null && typeFamily != null, "Type and type family must not be null");
+    ValidationHelper.assertTrue(type == CodeType.NULL || value != null, "Must not be null for non null type");
     this.type = type;
     this.arrayDim = arrayDim;
     this.value = value;
