@@ -722,7 +722,7 @@ public class ControlFlowGraph implements CodeConstants {
   }
 
   private void removeJsr(StructClass cl, StructMethod mt) {
-    removeJsrInstructions(cl.getPool(), first, DataPoint.getInitialDataPoint(mt));
+    removeJsrInstructions(cl.getPool(), first, DataPoint.getInitialDataPoint(cl, mt));
   }
 
   private static void removeJsrInstructions(ConstantPool pool, BasicBlock block, DataPoint data) {
