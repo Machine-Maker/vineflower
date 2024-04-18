@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.modules.decompiler.ValidationHelper;
+import org.jetbrains.java.decompiler.struct.StructClass;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
 
 public class VarType {
@@ -472,7 +473,11 @@ public class VarType {
             return VARTYPE_INT;
           }
         case OBJECT:
-          // TODO: find least common ancestor
+          StructClass cl = DecompilerContext.getStructContext().findCommonAncestor(type1.value, type2.value);
+          if (cl != null) {
+            return new VarType(cl.qualifiedName, true);
+          }
+
           return VARTYPE_OBJECT;
       }
     }
