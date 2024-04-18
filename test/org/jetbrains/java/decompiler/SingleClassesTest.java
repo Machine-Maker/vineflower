@@ -785,9 +785,7 @@ public class SingleClassesTest extends SingleClassesTestBase {
     register(JAVA_8, "TestGenericWildcard");
     register(JAVA_8, "TestGenericObjectType");
     register(JAVA_8, "TestGenericSubclassTypes");
-    // TODO: wrong variable name
     register(JAVA_16_NODEBUG, "TestRecordCanonicalConstructor");
-    // TODO: wrong variable name, recursive constructor because missing cast
     register(JAVA_16_NODEBUG, "TestRecordCanonicalConstructor2");
     register(JAVA_8, "TestGenericArrays");
     register(JAVA_8, "TestInstanceGeneric");

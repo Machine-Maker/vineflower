@@ -77,16 +77,16 @@ public class TestNumberDisambiguation {
       this.bar((short)0, (short)i);// 78
       this.bar('\u0000', (char)i);// 79
       this.bar(0, i);// 80
-      this.bar(0L, (long)i);// 81
-      this.bar(0.0F, (float)i);// 82
-      this.bar(0.0, (double)i);// 83
+      this.bar(0L, i);// 81
+      this.bar(0.0F, i);// 82
+      this.bar(0.0, i);// 83
       this.baz(0, (byte)127, (byte)i);// 85
       this.baz(0, (short)32767, (short)i);// 86
       this.baz(0, '\uffff', (char)i);// 87
       this.baz(0, 2147483647, i);// 88
-      this.baz(0, 9223372036854775807L, (long)i);// 89
-      this.baz(0, 3.4028235E38F, (float)i);// 90
-      this.baz(0, 1.7976931348623157E308, (double)i);// 91
+      this.baz(0, 9223372036854775807L, i);// 89
+      this.baz(0, 3.4028235E38F, i);// 90
+      this.baz(0, 1.7976931348623157E308, i);// 91
    }// 92
 }
 

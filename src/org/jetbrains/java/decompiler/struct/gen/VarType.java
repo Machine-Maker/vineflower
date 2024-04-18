@@ -386,12 +386,38 @@ public class VarType {
           return other.type == CodeType.OBJECT && !other.equals(VARTYPE_OBJECT);
         }
 
-        // TODO: add inheritance data
-//        if (other.type == CodeType.OBJECT && !other.value.equals(value)) {
-//          if (DecompilerContext.getStructContext().instanceOf(other.value, value)) {
-//            return true;
-//          }
-//        }
+        // Given that B extends A, B is lower in the lattice when compared to A.
+        if (other.type == CodeType.OBJECT && !other.value.equals(value)) {
+          if (DecompilerContext.getStructContext().instanceOf(other.value, value)) {
+            return true;
+          }
+        }
+    }
+
+    return res;
+  }
+
+  // higherEqualInLattice BUT we also check for assignability relations
+  public boolean higherCrossFamilyThan(VarType other, boolean equal) {
+    // Check higher (equal) within the same lattice
+    if (equal) {
+      if (this.higherEqualInLatticeThan(other)) {
+        return true;
+      }
+    } else {
+      if (this.higherInLatticeThan(other)) {
+        return true;
+      }
+    }
+
+    boolean res = false;
+    switch (this.type) {
+      case DOUBLE: // float, long, and integer can be assigned to double
+        res = other.typeFamily == TypeFamily.FLOAT;
+      case FLOAT: // long and int
+        res |= other.typeFamily == TypeFamily.LONG;
+      case LONG: // just int
+        res |= other.typeFamily == TypeFamily.INTEGER;
     }
 
     return res;
@@ -416,10 +442,10 @@ public class VarType {
             return VARTYPE_BYTECHAR;
           }
         case OBJECT:
-          // Null is the most bottom type
-
-          // TODO: Given that A extends B, meet(A, B) => A and not null
-          //   - This gives us a sharper type
+          // Consider a hierarchy where:
+          // - B extends A
+          // - C extends A
+          // meet(B, C) must be null
           return VARTYPE_NULL;
       }
     }
