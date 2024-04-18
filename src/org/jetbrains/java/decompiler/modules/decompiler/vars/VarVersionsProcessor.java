@@ -283,7 +283,7 @@ public class VarVersionsProcessor {
         }
         else if (expr instanceof ConstExprent) {
           VarType maxType = mapExprentMaxTypes.get(new VarVersionPair(expr.id, -1));
-          if (maxType != null && maxType.equals(VarType.VARTYPE_CHAR)) {
+          if (maxType != null) {
             ((ConstExprent)expr).setConstType(maxType);
           }
         }
