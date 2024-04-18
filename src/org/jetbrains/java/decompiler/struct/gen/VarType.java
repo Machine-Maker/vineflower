@@ -185,6 +185,7 @@ public class VarType {
   }
 
   public VarType resizeArrayDim(int newArrayDim) {
+    ValidationHelper.assertTrue(newArrayDim >= 0, "Can't have an array of negative size!");
     return new VarType(type, newArrayDim, value, typeFamily, stackSize);
   }
 
@@ -342,15 +343,16 @@ public class VarType {
       return true;
     }
 
-    if (other.arrayDim > 0) {
-      // Arrays are covariant
+    if (this.arrayDim > 0 && this.arrayDim == other.arrayDim) {
+      // Testing against two arrays
 
-      // todo check for arrayDim equality
-      //      return this.decreaseArrayDim().higherInLatticeThan(other.decreaseArrayDim());
-
+      // Arrays are covariant, check their bases
+      return this.resizeArrayDim(0).higherInLatticeThan(other.resizeArrayDim(0));
+    } else if (other.arrayDim > 0) {
+      // If the other is an array, only Object is higher in the lattice than the other
       return this.equals(VARTYPE_OBJECT);
-    }
-    else if (arrayDim > 0) {
+    } else if (arrayDim > 0) {
+      // If the other is not an array but we are, the only way we can be higher in the lattice is if the other is null (close to bottom)
       return (other.type == CodeType.NULL);
     }
 
