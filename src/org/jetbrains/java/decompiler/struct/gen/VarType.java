@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.java.decompiler.code.CodeConstants;
+import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.modules.decompiler.ValidationHelper;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
 
@@ -124,43 +124,25 @@ public class VarType {
   }
 
   public static String getChar(CodeType type) {
-    switch (type) {
-      case BYTE:
-        return "B";
-      case CHAR:
-        return "C";
-      case DOUBLE:
-        return "D";
-      case FLOAT:
-        return "F";
-      case INT:
-        return "I";
-      case LONG:
-        return "J";
-      case SHORT:
-        return "S";
-      case BOOLEAN:
-        return "Z";
-      case VOID:
-        return "V";
-      case GROUP2EMPTY:
-        return "G";
-      case NOTINITIALIZED:
-        return "N";
-      case ADDRESS:
-        return "A";
-      case BYTECHAR:
-        return "X";
-      case SHORTCHAR:
-        return "Y";
-      case UNKNOWN:
-        return "U";
-      case NULL:
-      case OBJECT:
-        return null;
-      default:
-        throw new RuntimeException("Invalid type");
-    }
+    return switch (type) {
+      case BYTE -> "B";
+      case CHAR -> "C";
+      case DOUBLE -> "D";
+      case FLOAT -> "F";
+      case INT -> "I";
+      case LONG -> "J";
+      case SHORT -> "S";
+      case BOOLEAN -> "Z";
+      case VOID -> "V";
+      case GROUP2EMPTY -> "G";
+      case NOTINITIALIZED -> "N";
+      case ADDRESS -> "A";
+      case BYTECHAR -> "X";
+      case SHORTCHAR -> "Y";
+      case UNKNOWN -> "U";
+      case NULL, OBJECT -> null;
+      default -> throw new RuntimeException("Invalid type");
+    };
   }
 
   protected static int getStackSize(CodeType type, int arrayDim) {
@@ -168,16 +150,11 @@ public class VarType {
       return 1;
     }
 
-    switch (type) {
-      case DOUBLE:
-      case LONG:
-        return 2;
-      case VOID:
-      case GROUP2EMPTY:
-        return 0;
-      default:
-        return 1;
-    }
+    return switch (type) {
+      case DOUBLE, LONG -> 2;
+      case VOID, GROUP2EMPTY -> 0;
+      default -> 1;
+    };
   }
 
   protected static TypeFamily getFamily(CodeType type, int arrayDim) {
@@ -185,28 +162,16 @@ public class VarType {
       return TypeFamily.OBJECT;
     }
 
-    switch (type) {
-      case BYTE:
-      case BYTECHAR:
-      case SHORTCHAR:
-      case CHAR:
-      case SHORT:
-      case INT:
-        return TypeFamily.INTEGER;
-      case DOUBLE:
-        return TypeFamily.DOUBLE;
-      case FLOAT:
-        return TypeFamily.FLOAT;
-      case LONG:
-        return TypeFamily.LONG;
-      case BOOLEAN:
-        return TypeFamily.BOOLEAN;
-      case NULL:
-      case OBJECT:
-        return TypeFamily.OBJECT;
-      default:
-        return TypeFamily.UNKNOWN;
-    }
+    return switch (type) {
+      case BYTE, BYTECHAR, SHORTCHAR,
+           CHAR, SHORT, INT -> TypeFamily.INTEGER;
+      case DOUBLE -> TypeFamily.DOUBLE;
+      case FLOAT -> TypeFamily.FLOAT;
+      case LONG -> TypeFamily.LONG;
+      case BOOLEAN -> TypeFamily.BOOLEAN;
+      case NULL, OBJECT -> TypeFamily.OBJECT;
+      default -> TypeFamily.UNKNOWN;
+    };
   }
 
   public VarType decreaseArrayDim() {
@@ -221,51 +186,6 @@ public class VarType {
 
   public VarType resizeArrayDim(int newArrayDim) {
     return new VarType(type, newArrayDim, value, typeFamily, stackSize);
-  }
-
-  public boolean isSuperset(VarType val) {
-    return this.equals(val) || this.isStrictSuperset(val) || this.equals(UNBOXING_TYPES.get(val));
-  }
-
-  public boolean isStrictSuperset(VarType val) {
-    CodeType valType = val.type;
-
-    if (valType == CodeType.UNKNOWN && type != CodeType.UNKNOWN) {
-      return true;
-    }
-
-    if (val.arrayDim > 0) {
-      return this.equals(VARTYPE_OBJECT);
-    }
-    else if (arrayDim > 0) {
-      return (valType == CodeType.NULL);
-    }
-
-    boolean res = false;
-
-    switch (type) {
-      case INT:
-        res = (valType == CodeType.SHORT || valType == CodeType.CHAR);
-      case SHORT:
-        res |= (valType == CodeType.BYTE);
-      case CHAR:
-        res |= (valType == CodeType.SHORTCHAR);
-      case BYTE:
-      case SHORTCHAR:
-        res |= (valType == CodeType.BYTECHAR);
-      case BYTECHAR:
-        res |= (valType == CodeType.BOOLEAN);
-        break;
-
-      case OBJECT:
-        if (valType == CodeType.NULL) {
-          return true;
-        } else if (this.equals(VARTYPE_OBJECT)) {
-          return valType == CodeType.OBJECT && !val.equals(VARTYPE_OBJECT);
-        }
-    }
-
-    return res;
   }
 
   @Override
@@ -283,11 +203,10 @@ public class VarType {
       return true;
     }
 
-    if (!(o instanceof VarType)) {
+    if (!(o instanceof VarType vt)) {
       return false;
     }
 
-    VarType vt = (VarType)o;
     return type == vt.type && arrayDim == vt.arrayDim && InterpreterUtil.equalObjects(value, vt.value);
   }
 
@@ -306,116 +225,25 @@ public class VarType {
     return res.toString();
   }
 
-  // type1 and type2 must not be null
-  // Result should be the intersection of both types
-  public static @Nullable VarType getCommonMinType(VarType type1, VarType type2) {
-    if (type1.isSuperset(type2)) {
-      return type2;
-    }
-    else if (type2.isSuperset(type1)) {
-      return type1;
-    }
-    else if (type1.typeFamily == type2.typeFamily) {
-      switch (type1.typeFamily) {
-        case INTEGER:
-          if ((type1.type == CodeType.CHAR && type2.type == CodeType.SHORT)
-              || (type1.type == CodeType.SHORT && type2.type == CodeType.CHAR)) {
-            return VARTYPE_SHORTCHAR;
-          }
-          else {
-            return VARTYPE_BYTECHAR;
-          }
-        case OBJECT:
-          return VARTYPE_NULL;
-      }
-    }
-
-    return null;
-  }
-
-  // type1 and type2 must not be null
-  // Result should be the union of both types
-  public static @Nullable VarType getCommonSupertype(VarType type1, VarType type2) {
-    if (type1.isSuperset(type2)) {
-      return type1;
-    }
-    else if (type2.isSuperset(type1)) {
-      return type2;
-    }
-    else if (type1.typeFamily == type2.typeFamily) {
-      switch (type1.typeFamily) {
-        case INTEGER:
-          if ((type1.type == CodeType.SHORTCHAR && type2.type == CodeType.BYTE)
-              || (type1.type == CodeType.BYTE && type2.type == CodeType.SHORTCHAR)) {
-            return VARTYPE_SHORT;
-          }
-          else {
-            return VARTYPE_INT;
-          }
-        case OBJECT:
-          return VARTYPE_OBJECT;
-      }
-    }
-
-    return null;
-  }
-
-  public static VarType getMinTypeInFamily(TypeFamily family) {
-    switch (family) {
-      case BOOLEAN:
-        return VARTYPE_BOOLEAN;
-      case INTEGER:
-        return VARTYPE_BYTECHAR;
-      case OBJECT:
-        return VARTYPE_NULL;
-      case FLOAT:
-        return VARTYPE_FLOAT;
-      case LONG:
-        return VARTYPE_LONG;
-      case DOUBLE:
-        return VARTYPE_DOUBLE;
-      case UNKNOWN:
-        return VARTYPE_UNKNOWN;
-      default:
-        throw new IllegalArgumentException("Invalid type family: " + family);
-    }
-  }
-
   public static CodeType getType(char c) {
-    switch (c) {
-      case 'B':
-        return CodeType.BYTE;
-      case 'C':
-        return CodeType.CHAR;
-      case 'D':
-        return CodeType.DOUBLE;
-      case 'F':
-        return CodeType.FLOAT;
-      case 'I':
-        return CodeType.INT;
-      case 'J':
-        return CodeType.LONG;
-      case 'S':
-        return CodeType.SHORT;
-      case 'Z':
-        return CodeType.BOOLEAN;
-      case 'V':
-        return CodeType.VOID;
-      case 'G':
-        return CodeType.GROUP2EMPTY;
-      case 'N':
-        return CodeType.NOTINITIALIZED;
-      case 'A':
-        return CodeType.ADDRESS;
-      case 'X':
-        return CodeType.BYTECHAR;
-      case 'Y':
-        return CodeType.SHORTCHAR;
-      case 'U':
-        return CodeType.UNKNOWN;
-      default:
-        throw new IllegalArgumentException("Invalid type: " + c);
-    }
+    return switch (c) {
+      case 'B' -> CodeType.BYTE;
+      case 'C' -> CodeType.CHAR;
+      case 'D' -> CodeType.DOUBLE;
+      case 'F' -> CodeType.FLOAT;
+      case 'I' -> CodeType.INT;
+      case 'J' -> CodeType.LONG;
+      case 'S' -> CodeType.SHORT;
+      case 'Z' -> CodeType.BOOLEAN;
+      case 'V' -> CodeType.VOID;
+      case 'G' -> CodeType.GROUP2EMPTY;
+      case 'N' -> CodeType.NOTINITIALIZED;
+      case 'A' -> CodeType.ADDRESS;
+      case 'X' -> CodeType.BYTECHAR;
+      case 'Y' -> CodeType.SHORTCHAR;
+      case 'U' -> CodeType.UNKNOWN;
+      default -> throw new IllegalArgumentException("Invalid type: " + c);
+    };
   }
 
   public static boolean isPrimitive(VarType type) {
@@ -433,5 +261,206 @@ public class VarType {
       return arrayDim == 0 || ret == null ? ret : ret.resizeArrayDim(ret.arrayDim + arrayDim);
     }
     return this;
+  }
+
+  // ==========================================================================
+  //                            THE VARTYPE LATTICE
+  // ==========================================================================
+  //
+  // VarType instances are organized in a lattice based on their type family.
+  // Each family has its own lattice, each organized a bit differently, but all
+  // are defined by MEET and JOIN. Of the 7 type families, the lattice of 4 of
+  // them are trivial. For BOOLEAN, FLOAT, DOUBLE, and LONG, each element makes
+  // up its own lattice such that:
+  //                                  TOP
+  //                                   |
+  //                                  Type
+  //                                   |
+  //                                  BOT
+  //
+  // This makes MEET and JOIN trivial to define. Out of the rest, the integer
+  // and object lattices are much more interesting. For the integer lattice, we
+  // need to consider sub-integer types and how they play into the definition.
+  // The integer lattice is defined as such:
+  //                                  TOP
+  //                                   |
+  //                                  int
+  //                                 /   \
+  //                                /     \
+  //                               /       \
+  //                              /         \
+  //                           char        short
+  //                             \         /  |
+  //                              \       /  byte
+  //                               \     /    |
+  //                               shortchar  |
+  //                                   |     /
+  //                                   |    /
+  //                                bytechar
+  //                                   |
+  //                                  BOT
+  //
+  // The complication with this lattice is that there are in essence two
+  // domains, integer and char. During the decompilation process there may
+  // not be enough context to decide if a numerical definition is part of the
+  // character or integer domain. To reconcile this, usages are calculated
+  // and a sharper type is determined. The next interesting lattice is the
+  // Object lattice family. It is defined as such:
+  //
+  //                                  TOP
+  //                                   |
+  //                                 Object
+  //                                  /|\
+  //                                 / | \
+  //                                /  |  \
+  //                             Implementors...
+  //                                \  |  /
+  //                                 \ | /
+  //                                  \|/
+  //                                   |
+  //                                  null
+  //                                   |
+  //                                  BOT
+  //
+  // "Implementors" are any class that extends Object, so it can be regular
+  // classes, all arrays, enums, records, et cetera. The final type family is
+  // UNKNOWN, the family of bottom types. This poses a conundrum for the lattice,
+  // as it would only consist of the bottom. Therefore it does not make sense
+  // to consider this as a lattice of its own right, and just treat it as a special
+  // case.
+  // TODO: add array covariance information
+
+
+  public boolean higherEqualInLatticeThan(VarType val) {
+    return this.equals(val) || this.higherInLatticeThan(val) || this.equals(UNBOXING_TYPES.get(val));
+  }
+
+  // 'this' higher in the lattice when compared to 'other'?
+  public boolean higherInLatticeThan(VarType other) {
+    // If other is BOT, and we are not BOT, we must necessarily be higher in the lattice
+    if (other.type == CodeType.UNKNOWN && type != CodeType.UNKNOWN) {
+      return true;
+    }
+
+    if (other.arrayDim > 0) {
+      // Arrays are covariant
+
+      // todo check for arrayDim equality
+      //      return this.decreaseArrayDim().higherInLatticeThan(other.decreaseArrayDim());
+
+      return this.equals(VARTYPE_OBJECT);
+    }
+    else if (arrayDim > 0) {
+      return (other.type == CodeType.NULL);
+    }
+
+    boolean res = false;
+
+    // c.f. the int family lattice
+    switch (type) {
+      case INT:
+        res = (other.type == CodeType.SHORT || other.type == CodeType.CHAR);
+      case SHORT:
+        res |= (other.type == CodeType.BYTE);
+      case CHAR:
+        res |= (other.type == CodeType.SHORTCHAR);
+      case BYTE:
+      case SHORTCHAR:
+        res |= (other.type == CodeType.BYTECHAR);
+      case BYTECHAR:
+        // Special case boolean: it's represented as an integer, so the domains cross sometimes
+        res |= (other.type == CodeType.BOOLEAN);
+        break;
+
+      case OBJECT:
+        // BOT -> null -> Impl... -> Object -> TOP
+        
+        // if other is null, then we must be higher in the lattice
+        if (other.type == CodeType.NULL) {
+          // TODO: check for 'this' not being null
+          return true;
+        } else if (this.equals(VARTYPE_OBJECT)) {
+          // if we are object, then we are higher than everything other than TOP
+          return other.type == CodeType.OBJECT && !other.equals(VARTYPE_OBJECT);
+        }
+
+        // TODO: add inheritance data
+//        if (other.type == CodeType.OBJECT && !other.value.equals(value)) {
+//          if (DecompilerContext.getStructContext().instanceOf(other.value, value)) {
+//            return true;
+//          }
+//        }
+    }
+
+    return res;
+  }
+
+  // Returns the "minimal" type out of the two provided (the MEET of both types)
+  // Types should fall in lattice
+  public static @Nullable VarType meet(@NotNull VarType type1, @NotNull VarType type2) {
+    if (type1.higherEqualInLatticeThan(type2)) {
+      return type2;
+    } else if (type2.higherEqualInLatticeThan(type1)) {
+      return type1;
+    } else if (type1.typeFamily == type2.typeFamily) {
+      // Special casing
+      switch (type1.typeFamily) {
+        case INTEGER:
+          if ((type1.type == CodeType.CHAR && type2.type == CodeType.SHORT)
+              || (type1.type == CodeType.SHORT && type2.type == CodeType.CHAR)) {
+            return VARTYPE_SHORTCHAR;
+          }
+          else {
+            return VARTYPE_BYTECHAR;
+          }
+        case OBJECT:
+          // Null is the most bottom type
+
+          // TODO: Given that A extends B, meet(A, B) => A and not null
+          //   - This gives us a sharper type
+          return VARTYPE_NULL;
+      }
+    }
+
+    return null;
+  }
+
+  // Returns the "maximal" type out of the two provided (the JOIN of both types)
+  // Types should rise in the lattice
+  public static @Nullable VarType join(@NotNull VarType type1, @NotNull VarType type2) {
+    if (type1.higherEqualInLatticeThan(type2)) {
+      return type1;
+    } else if (type2.higherEqualInLatticeThan(type1)) {
+      return type2;
+    } else if (type1.typeFamily == type2.typeFamily) {
+      // Special casing
+      switch (type1.typeFamily) {
+        case INTEGER:
+          if ((type1.type == CodeType.SHORTCHAR && type2.type == CodeType.BYTE)
+              || (type1.type == CodeType.BYTE && type2.type == CodeType.SHORTCHAR)) {
+            return VARTYPE_SHORT;
+          }
+          else {
+            return VARTYPE_INT;
+          }
+        case OBJECT:
+          // TODO: find least common ancestor
+          return VARTYPE_OBJECT;
+      }
+    }
+
+    return null;
+  }
+
+  public static VarType findFamilyBottom(TypeFamily family) {
+    return switch (family) {
+      case BOOLEAN -> VARTYPE_BOOLEAN;
+      case INTEGER -> VARTYPE_BYTECHAR;
+      case OBJECT -> VARTYPE_NULL;
+      case FLOAT -> VARTYPE_FLOAT;
+      case LONG -> VARTYPE_LONG;
+      case DOUBLE -> VARTYPE_DOUBLE;
+      case UNKNOWN -> VARTYPE_UNKNOWN;
+    };
   }
 }

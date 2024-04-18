@@ -651,8 +651,8 @@ public class InvocationExprent extends Exprent {
     CheckTypesResult result = new CheckTypesResult();
 
     if (instance != null) {
-      result.addMinTypeExprent(instance, VarType.getMinTypeInFamily(instance.getExprType().typeFamily));
-      result.addMaxTypeExprent(instance, instance.getExprType());
+      result.addExprLowerBound(instance, VarType.findFamilyBottom(instance.getExprType().typeFamily));
+      result.addExprUpperBound(instance, instance.getExprType());
     }
 
     for (int i = 0; i < lstParameters.size(); i++) {
@@ -660,8 +660,8 @@ public class InvocationExprent extends Exprent {
 
       VarType leftType = descriptor.params[i];
 
-      result.addMinTypeExprent(parameter, VarType.getMinTypeInFamily(leftType.typeFamily));
-      result.addMaxTypeExprent(parameter, leftType);
+      result.addExprLowerBound(parameter, VarType.findFamilyBottom(leftType.typeFamily));
+      result.addExprUpperBound(parameter, leftType);
     }
 
     return result;
@@ -1497,7 +1497,7 @@ public class InvocationExprent extends Exprent {
       return false;
     }
 
-    return md.params[i].isSuperset(exp.getExprType());
+    return md.params[i].higherEqualInLatticeThan(exp.getExprType());
   }
 
   // Trying to coerce byte->int can cause ambiguity issues, consider it as ambigous and not a superset
