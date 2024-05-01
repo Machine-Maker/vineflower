@@ -48,9 +48,9 @@ public class AssignmentExprent extends Exprent {
 
   @Override
   public VarType getExprType() {
-    // Union together types
+    // join the types on the lattice
     VarType rType = VarType.join(left.getExprType(), right.getExprType());
-    // TODO: maybe there's a better default for null
+    // No possible result? Return the left's type.
     return rType == null ? left.getExprType() : rType;
   }
 
@@ -159,8 +159,7 @@ public class AssignmentExprent extends Exprent {
 
     buffer.addStartBytecodeMapping(bytecode);
 
-    if (this.left instanceof VarExprent && DecompilerContext.getOption(IFernflowerPreferences.DECOMPILER_COMMENTS)) {
-      VarExprent varLeft = (VarExprent) this.left;
+    if (this.left instanceof VarExprent varLeft && DecompilerContext.getOption(IFernflowerPreferences.DECOMPILER_COMMENTS)) {
 
       if (varLeft.isDefinition() && varLeft.getProcessor() != null) {
         if (varLeft.getProcessor().getSyntheticSemaphores().contains(varLeft.getIndex())) {

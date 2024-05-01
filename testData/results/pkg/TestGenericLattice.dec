@@ -1,0 +1,149 @@
+package pkg;
+
+import java.util.Collection;
+import java.util.List;
+
+public class TestGenericLattice {
+   Collection<TestGenericLattice.Cat> cc;
+   List<? extends TestGenericLattice.Cat> lec;
+   List<? super TestGenericLattice.Cat> lsc;
+   Collection<? extends TestGenericLattice.Cat> cec1;
+   Collection<? extends TestGenericLattice.Cat> cec2;
+   Collection<? super TestGenericLattice.Cat> csc1;
+   Collection<? super TestGenericLattice.Cat> csc2;
+   List<? extends TestGenericLattice.Animal> lea1;
+   List<? extends TestGenericLattice.Animal> lea2;
+   List<? super TestGenericLattice.Animal> lsa;
+   List<? super TestGenericLattice.Cat> lsc1;
+   List<?> w1;
+   List r1;
+
+   public void testAssignable() {
+      List<TestGenericLattice.Animal> la = null;// 28
+      List<TestGenericLattice.Cat> lc = null;// 29
+      this.cc = lc;// 30
+      this.lec = lc;// 33
+      this.lsc = lc;// 34
+      this.cec1 = this.lec;// 37
+      this.cec2 = lc;// 38
+      this.csc1 = this.lsc;// 39
+      this.csc2 = lc;// 40
+      this.lea1 = this.lec;// 43
+      this.lea2 = la;// 44
+      this.lsa = la;// 46
+      this.lsc1 = this.lsa;// 49
+      this.w1 = lc;// 52
+      this.r1 = lc;// 54
+   }// 55
+
+   static class Animal {
+   }
+
+   static class Cat extends TestGenericLattice.Animal {
+   }
+}
+
+class 'pkg/TestGenericLattice' {
+   method 'testAssignable ()V' {
+      0      21
+      1      21
+      2      22
+      3      22
+      4      23
+      5      23
+      6      23
+      7      23
+      8      23
+      9      24
+      a      24
+      b      24
+      c      24
+      d      24
+      e      25
+      f      25
+      10      25
+      11      25
+      12      25
+      13      26
+      14      26
+      15      26
+      16      26
+      17      26
+      18      26
+      19      26
+      1a      26
+      1b      27
+      1c      27
+      1d      27
+      1e      27
+      1f      27
+      20      28
+      21      28
+      22      28
+      23      28
+      24      28
+      25      28
+      26      28
+      27      28
+      28      29
+      29      29
+      2a      29
+      2b      29
+      2c      29
+      2d      30
+      2e      30
+      2f      30
+      30      30
+      31      30
+      32      30
+      33      30
+      34      30
+      35      31
+      36      31
+      37      31
+      38      31
+      39      31
+      3a      32
+      3b      32
+      3c      32
+      3d      32
+      3e      32
+      3f      33
+      40      33
+      41      33
+      42      33
+      43      33
+      44      33
+      45      33
+      46      33
+      47      34
+      48      34
+      49      34
+      4a      34
+      4b      34
+      4c      35
+      4d      35
+      4e      35
+      4f      35
+      50      35
+      51      36
+   }
+}
+
+Lines mapping:
+28 <-> 22
+29 <-> 23
+30 <-> 24
+33 <-> 25
+34 <-> 26
+37 <-> 27
+38 <-> 28
+39 <-> 29
+40 <-> 30
+43 <-> 31
+44 <-> 32
+46 <-> 33
+49 <-> 34
+52 <-> 35
+54 <-> 36
+55 <-> 37

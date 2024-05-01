@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.java.decompiler.main.DecompilerContext;
 import org.jetbrains.java.decompiler.modules.decompiler.ValidationHelper;
 import org.jetbrains.java.decompiler.struct.StructClass;
+import org.jetbrains.java.decompiler.struct.gen.generics.GenericType;
 import org.jetbrains.java.decompiler.util.InterpreterUtil;
 
 public class VarType {
@@ -378,17 +379,23 @@ public class VarType {
       case OBJECT:
         // BOT -> null -> Impl... -> Object -> TOP
         
-        // if other is null, then we must be higher in the lattice
+        // if other is null, then, as an object, we must be higher in the lattice
         if (other.type == CodeType.NULL) {
-          // TODO: check for 'this' not being null
           return true;
         } else if (this.equals(VARTYPE_OBJECT)) {
           // if we are object, then we are higher than everything other than TOP
-          return other.type == CodeType.OBJECT && !other.equals(VARTYPE_OBJECT);
+          return !other.equals(VARTYPE_OBJECT);
+        }
+
+        // Check base if neither 'this' and 'other' are generic, or if the generic types satisfy the condition.
+
+        boolean checkBase = true;
+        if (isGeneric() && other.isGeneric()) {
+          checkBase = shouldCheckGenericBase((GenericType) this, (GenericType) other);
         }
 
         // Given that B extends A, B is lower in the lattice when compared to A.
-        if (other.type == CodeType.OBJECT && !other.value.equals(value)) {
+        if (checkBase && other.type == CodeType.OBJECT && !other.value.equals(value)) {
           if (DecompilerContext.getStructContext().instanceOf(other.value, value)) {
             return true;
           }
@@ -396,6 +403,32 @@ public class VarType {
     }
 
     return res;
+  }
+
+  // For generic types 't' and 'other', should we check the base type to determine if t <: other?
+  // E.g. List<Type> <: Collection<Type>
+  private static boolean shouldCheckGenericBase(GenericType t, GenericType other) {
+    if (t.argumentsEqual(other)) {
+      return t.getWildcard() == other.getWildcard();
+    } else {
+      // Arguments not equal. Check them, one by one.
+      if (t.getArguments().size() == other.getArguments().size()) {
+        for (int i = 0; i < t.getArguments().size(); i++) {
+          VarType a1 = t.getArguments().get(i);
+          VarType a2 = other.getArguments().get(i);
+
+          // List<? extends Type> <: Collection<Type>
+          // List<? super Type> <: Collection<Type>
+          if (a2 != null && a1 instanceof GenericType ga1 && ga1.getWildcard() != GenericType.WILDCARD_NO) {
+            if (a1.value.equals(a2.value) && !a2.isGeneric()) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   // higherEqualInLattice BUT we also check for assignability relations
@@ -411,6 +444,7 @@ public class VarType {
       }
     }
 
+    // c.f. https://docs.oracle.com/javase/specs/jls/se21/html/jls-4.html#jls-4.10.1
     boolean res = false;
     switch (this.type) {
       case DOUBLE: // float, long, and integer can be assigned to double
@@ -447,6 +481,7 @@ public class VarType {
           // - B extends A
           // - C extends A
           // meet(B, C) must be null
+          // TODO: no it doesn't! it can be a union type, that way it preserves information!
           return VARTYPE_NULL;
       }
     }
@@ -473,6 +508,7 @@ public class VarType {
             return VARTYPE_INT;
           }
         case OBJECT:
+          // TODO: can make an intersection type?
           StructClass cl = DecompilerContext.getStructContext().findCommonAncestor(type1.value, type2.value);
           if (cl != null) {
             return new VarType(cl.qualifiedName, true);
